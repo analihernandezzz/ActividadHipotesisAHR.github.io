@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analítica Predictiva: Comportamiento de Compra</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --success-text: #065f46;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --danger-text: #991b1b;
+            --background: #f1f5f9;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 0.75rem;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            border-bottom: 2px solid var(--primary);
+            display: inline-block;
+            padding-bottom: 0.25rem;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-muted);
+        }
+
+        .section-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .hypothesis-box {
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+            background-color: #f8fafc;
+        }
+
+        .hypothesis-box strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        @media (min-width: 640px) {
+            .btn { width: auto; }
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--background);
+        }
+
+        .btn-large {
+            display: block;
+            width: 100%;
+            font-size: 1.125rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Data Display */
+        .data-summary {
+            background-color: var(--background);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            border: 1px dashed var(--border);
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.25rem;
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        /* Results Card */
+        .result-card {
+            text-align: center;
+            padding: 2rem;
+            border-radius: var(--radius);
+            margin-top: 1.5rem;
+            display: none; /* Hidden initially */
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .result-card.success {
+            background-color: var(--success-light);
+            border: 2px solid var(--success);
+            color: var(--success-text);
+        }
+
+        .result-card.danger {
+            background-color: var(--danger-light);
+            border: 2px solid var(--danger);
+            color: var(--danger-text);
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background-color: var(--surface);
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        th {
+            background-color: var(--background);
+            font-weight: 600;
+        }
+
+        .table-success { background-color: var(--success-light); color: var(--success-text); font-weight: bold;}
+        .table-danger { background-color: var(--danger-light); color: var(--danger-text); font-weight: bold;}
+
+        /* Math Procedure */
+        .math-box {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: auto;
+        }
+
+        .math-step {
+            margin-bottom: 1rem;
+            border-left: 3px solid var(--primary);
+            padding-left: 1rem;
+        }
+
+        .highlight {
+            color: #38bdf8;
+            font-weight: bold;
+        }
+
+        /* Utilities */
+        .flex-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+        
+        .flex-1 { flex: 1; }
+        
+        .text-center { text-align: center; }
+        
+        .hidden { display: none !important; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-error {
+            color: var(--danger);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Analítica Predictiva</h1>
+        <p>Predicción de comportamiento de compra mediante experimentación estadística</p>
+    </header>
+
+    <section class="section-card" id="introduccion">
+        <h2>1. Introducción</h2>
+        <p>En el entorno empresarial actual, los datos son el activo más valioso. Este experimento se centra en un problema común en la <strong>Inteligencia de Negocios</strong>: ¿Podemos predecir qué comprará un cliente basándonos en lo que ha comprado antes?</p>
+        <p>Utilizar <strong>analítica predictiva</strong> significa aplicar técnicas estadísticas a datos históricos para realizar estimaciones sobre eventos futuros. Si una empresa logra predecir la próxima categoría de compra, puede optimizar sus campañas de marketing, gestionar su inventario de manera proactiva y personalizar recomendaciones, aumentando así la rentabilidad.</p>
+    </section>
+
+    <section class="section-card" id="hipotesis">
+        <h2>2. Hipótesis del Proyecto</h2>
+        <p>Para comprobar si nuestro modelo predictivo realmente funciona o si los aciertos son mera casualidad, planteamos formalmente nuestras hipótesis estadísticas.</p>
+        
+        <div class="grid-2">
+            <div class="hypothesis-box">
+                <strong>H0 — Hipótesis Nula</strong>
+                "El historial y comportamiento de compra de un cliente NO permiten predecir de manera significativa la categoría de producto que comprará posteriormente."
+                <br><br>
+                <small><i>Asume que cualquier acierto en la predicción es producto del azar.</i></small>
+            </div>
+            <div class="hypothesis-box">
+                <strong>H1 — Hipótesis Alternativa</strong>
+                "El historial y comportamiento de compra de un cliente SÍ permiten predecir de manera significativa la categoría de producto que comprará posteriormente."
+                <br><br>
+                <small><i>Asume que el modelo predictivo es mejor que simplemente adivinar.</i></small>
+            </div>
+        </div>
+
+        <h3>Variables del Experimento</h3>
+        <p><strong>Variable a predecir:</strong> Categoría de producto de la siguiente compra (ej. Tecnología, Ropa, Alimentos, Entretenimiento, Hogar).</p>
+        <p>Al existir 5 categorías, la probabilidad de adivinar correctamente por puro azar es del <strong>20% (0.20)</strong>.</p>
+    </section>
+
+    <section class="section-card" id="simulador">
+        <h2>3. Simulador de la Hipótesis</h2>
+        <p>Simule el desempeño de un algoritmo predictivo basado en datos de clientes. Configure los parámetros y evalúe la evidencia estadística.</p>
+
+        <div class="grid-2">
+            <!-- Left Column: Configuration -->
+            <div>
+                <div class="hypothesis-box">
+                    <h3>Mi vara para medir el nivel de significancia</h3>
+                    <div class="form-group">
+                        <label for="alpha-input">Nivel de significancia (α)</label>
+                        <input type="number" id="alpha-input" value="0.05" min="0.01" max="0.10" step="0.01">
+                        <p style="font-size: 0.85rem; margin-top: 0.5rem; margin-bottom: 0;">Este valor representa el nivel de evidencia mínimo que exigiremos para decidir si existe suficiente evidencia empírica para rechazar la hipótesis nula (H0).</p>
+                    </div>
+                </div>
+
+                <div class="hypothesis-box">
+                    <h3>Ingresar los datos de la muestra</h3>
+                    <p style="font-size: 0.9rem; margin-bottom: 1rem;">Simularemos el historial de un grupo de clientes y compararemos la predicción del modelo con la categoría que realmente compraron.</p>
+                    
+                    <button id="btn-random" class="btn btn-secondary" style="margin-bottom: 1rem;">Generar muestra al azar</button>
+                    
+                    <div class="flex-row">
+                        <div class="form-group flex-1" style="margin-bottom: 0;">
+                            <label for="sample-size">Tamaño de muestra manual:</label>
+                            <input type="number" id="sample-size" placeholder="Ej. 200" min="30">
+                        </div>
+                        <button id="btn-manual" class="btn btn-secondary">Generar</button>
+                    </div>
+                    <div id="sample-error" class="alert-error">El tamaño de muestra debe ser mayor a 30 para aplicar el Teorema del Límite Central.</div>
+
+                    <div id="data-summary" class="data-summary hidden">
+                        <div style="text-align: center; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--primary);"><i>Datos simulados para fines educativos</i></div>
+                        <div class="data-row">
+                            <span>Clientes analizados (n):</span>
+                            <strong id="display-n">0</strong>
+                        </div>
+                        <div class="data-row">
+                            <span>Predicciones Correctas:</span>
+                            <strong id="display-correct" style="color: var(--success);">0</strong>
+                        </div>
+                        <div class="data-row">
+                            <span>Predicciones Incorrectas:</span>
+                            <strong id="display-incorrect" style="color: var(--danger);">0</strong>
+                        </div>
+                        <div class="data-row">
+                            <span>Proporción de Aciertos (p̂):</span>
+                            <strong id="display-phat">0%</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-analyze" class="btn btn-primary btn-large" disabled>Analizar datos y tomar decisión</button>
+            </div>
+
+            <!-- Right Column: Results -->
+            <div id="results-column" style="opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
+                <div class="hypothesis-box" style="height: 100%; display: flex; flex-direction: column;">
+                    <h3 class="text-center">Resultado del Análisis</h3>
+                    
+                    <div style="background: white; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 1rem; text-align: center;">
+                        <div style="font-size: 0.9rem; color: var(--text-muted);">Valor p calculado</div>
+                        <div style="font-size: 2rem; font-weight: bold; color: var(--primary);" id="calc-pvalue">-</div>
+                    </div>
+
+                    <div style="background: white; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 1rem; text-align: center;">
+                        <div style="font-size: 0.9rem; color: var(--text-muted);">Nivel alfa (α) seleccionado</div>
+                        <div style="font-size: 1.5rem; font-weight: bold;" id="calc-alpha">-</div>
+                    </div>
+
+                    <div class="text-center" style="margin: 1rem 0;">
+                        <h4>Comparación</h4>
+                        <div style="font-family: monospace; font-size: 1.25rem; background: var(--background); padding: 0.5rem; border-radius: 0.5rem; display: inline-block;" id="calc-comparison">
+                            p ? α
+                        </div>
+                    </div>
+
+                    <div class="text-center" style="margin-bottom: 1rem;">
+                        <strong>Regla de decisión:</strong><br>
+                        <small>Si p ≤ α → se rechaza H0</small><br>
+                        <small>Si p > α → no se rechaza H0</small>
+                    </div>
+
+                    <div id="final-decision-card" class="result-card">
+                        <div class="result-title" id="decision-title">Esperando análisis...</div>
+                        <p id="decision-text" style="color: inherit; margin: 0; font-size: 0.95rem;"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-card" id="explicacion-hipotesis">
+        <div class="grid-2">
+            <!-- Cuadro 1: H0 -->
+            <div class="hypothesis-box" style="border-left: 4px solid var(--text-muted); background-color: #f8fafc;">
+                <h3 style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-main); margin-bottom: 1rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                    ¿Por qué H0 es la hipótesis nula?
+                </h3>
+                <p style="font-size: 0.95rem;">La hipótesis nula representa la situación de referencia; es decir, la afirmación de que <strong>no existe una relación o capacidad predictiva significativa</strong>.</p>
+                
+                <div style="background: white; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid var(--border); font-size: 0.9rem;">
+                    <strong>H0:</strong> El historial y comportamiento de compra de un cliente NO permiten predecir de manera significativa la categoría de producto que comprará posteriormente.
+                </div>
+                
+                <p style="font-size: 0.95rem;">Se considera "nula" porque parte de la idea de que cualquier capacidad aparente de predicción podría deberse al azar, y necesitamos evidencia estadística suficiente para demostrar lo contrario.</p>
+                
+                <div style="background: var(--background); padding: 1rem; border-radius: 0.5rem; border-left: 3px solid var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+                    <em>"Partimos de la idea de que el comportamiento histórico NO permite realizar una predicción significativa. El análisis de los datos determinará si existe suficiente evidencia para rechazar esta idea."</em>
+                </div>
+            </div>
+
+            <!-- Cuadro 2: H1 -->
+            <div class="hypothesis-box" style="border-left: 4px solid var(--primary); background-color: #eff6ff;">
+                <h3 style="display: flex; align-items: center; gap: 0.5rem; color: var(--primary); margin-bottom: 1rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    ¿Por qué H1 puede ser apoyada?
+                </h3>
+                <p style="font-size: 0.95rem;">La hipótesis alternativa representa lo que queremos investigar: que <strong>sí existe una capacidad predictiva significativa</strong>.</p>
+                
+                <div style="background: white; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid var(--primary); font-size: 0.9rem;">
+                    <strong>H1:</strong> El historial y comportamiento de compra de un cliente SÍ permiten predecir de manera significativa la categoría de producto que comprará posteriormente.
+                </div>
+                
+                <p style="font-size: 0.95rem;">H1 se apoya cuando los datos proporcionan suficiente evidencia estadística contra H0.</p>
+                
+                <div style="background: var(--primary); color: white; padding: 1rem; border-radius: 0.5rem; font-size: 0.9rem; margin: 1rem 0;">
+                    <em>"Si el valor p es menor o igual que α, existe suficiente evidencia estadística para rechazar H0 y apoyar H1."</em>
+                </div>
+                
+                <div style="font-family: monospace; font-size: 0.85rem; background: white; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                    <div style="margin-bottom: 0.5rem;"><strong style="color: var(--success); font-size: 1rem;">p ≤ α</strong> → Rechazar H0 → <span style="color: var(--success);">Evidencia a favor de H1</span></div>
+                    <div><strong style="color: var(--danger); font-size: 1rem;">p > α</strong> → No rechazar H0 → <span style="color: var(--text-muted);">Evidencia insuficiente para apoyar H1</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 1.5rem; background-color: #fffbeb; color: #92400e; padding: 1.25rem; border-radius: var(--radius); border: 1px solid #fde68a; font-size: 0.95rem;">
+            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 0.1rem;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div>
+                    <strong style="display: block; margin-bottom: 0.25rem;">Nota sobre el lenguaje estadístico:</strong>
+                    No utilizar únicamente la expresión "hipótesis aceptada", porque estadísticamente es más correcto hablar de <em>"se rechaza H0"</em>, <em>"no se rechaza H0"</em>, <em>"existe evidencia suficiente para apoyar H1"</em> o <em>"no existe evidencia suficiente para apoyar H1"</em>.<br><br>
+                    <span style="font-style: italic; background: #fef3c7; padding: 0.2rem 0.5rem; border-radius: 0.25rem; display: inline-block;">En términos sencillos, cuando rechazamos H0, nuestros resultados apoyan la hipótesis alternativa.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NUEVA SECCIÓN AGREGADA SEGÚN INSTRUCCIONES -->
+    <section class="section-card" id="nueva-seccion-h0-h1">
+        <h2>¿Por qué H0 y H1?</h2>
+        <div class="grid-2">
+            <!-- CUADRO 1 -->
+            <div class="hypothesis-box" style="border-left: 4px solid var(--text-muted); background-color: #f8fafc;">
+                <h3 style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-main); margin-bottom: 1rem;">
+                    ¿Por qué es una Hipótesis Nula?
+                </h3>
+                <div style="background: white; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid var(--border); font-size: 0.9rem;">
+                    <strong>H0:</strong> "El historial y comportamiento de compra de un cliente NO permiten predecir de manera significativa la categoría de producto que comprará posteriormente."
+                </div>
+                <p style="font-size: 0.95rem; margin-bottom: 1rem;">
+                    La hipótesis nula representa la situación de referencia. En este experimento partimos de la idea de que el comportamiento histórico de compra no tiene una capacidad predictiva significativa y que los resultados que observamos podrían deberse al azar.
+                </p>
+                <div style="background: var(--background); padding: 1rem; border-radius: 0.5rem; border-left: 3px solid var(--text-muted); font-size: 0.9rem; font-style: italic; margin-bottom: 1rem;">
+                    "H0 es nuestra hipótesis nula porque comenzamos suponiendo que el historial de compras no permite realizar predicciones significativas. Los datos deberán proporcionar suficiente evidencia para poder rechazar esta idea."
+                </div>
+                <div style="font-weight: bold; color: var(--text-main); text-align: center; padding: 0.75rem; border: 1px dashed var(--border); border-radius: 0.5rem; background: white;">
+                    H0 = No existe evidencia suficiente de capacidad predictiva
+                </div>
+            </div>
+
+            <!-- CUADRO 2 -->
+            <div class="hypothesis-box" style="border-left: 4px solid var(--primary); background-color: #eff6ff;">
+                <h3 style="display: flex; align-items: center; gap: 0.5rem; color: var(--primary); margin-bottom: 1rem;">
+                    ¿Por qué H1 puede ser apoyada?
+                </h3>
+                <div style="background: white; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid var(--primary); font-size: 0.9rem;">
+                    <strong>H1:</strong> "El historial y comportamiento de compra de un cliente SÍ permiten predecir de manera significativa la categoría de producto que comprará posteriormente."
+                </div>
+                <p style="font-size: 0.95rem; margin-bottom: 1rem;">
+                    La hipótesis alternativa representa la posibilidad que queremos comprobar: que sí existe una capacidad predictiva significativa basada en el comportamiento histórico del cliente.
+                </p>
+                <div style="background: var(--primary); color: white; padding: 1rem; border-radius: 0.5rem; font-size: 0.9rem; font-style: italic; margin-bottom: 1rem;">
+                    "H1 representa la posibilidad de que el comportamiento histórico de compra sí tenga capacidad para predecir la siguiente categoría de compra. Si los datos proporcionan suficiente evidencia contra H0, podremos apoyar H1."
+                </div>
+                <div style="font-weight: bold; color: var(--primary); text-align: center; padding: 0.75rem; border: 1px dashed var(--primary); border-radius: 0.5rem; background: white;">
+                    H1 = Existe evidencia de capacidad predictiva
+                </div>
+            </div>
+        </div>
+
+        <!-- CONEXIÓN CON EL SIMULADOR -->
+        <div style="margin-top: 2rem; background-color: var(--surface); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border);">
+            <h3 class="text-center" style="margin-bottom: 1.5rem; color: var(--text-main);">Conexión con el Simulador</h3>
+            
+            <div class="grid-2" style="gap: 1rem; margin-bottom: 2rem;">
+                <div style="background: var(--success-light); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--success); text-align: center;">
+                    <strong style="color: var(--success-text); font-size: 1.2rem; display: block; margin-bottom: 0.5rem;">Si p ≤ α</strong>
+                    <span style="display: block; margin-bottom: 0.25rem; color: var(--success-text);">Se rechaza H0</span>
+                    <span style="font-size: 1.2rem; display: block; margin-bottom: 0.25rem; color: var(--success-text);">↓</span>
+                    <strong style="color: var(--success-text);">Existe evidencia suficiente para apoyar H1.</strong>
+                </div>
+                
+                <div style="background: var(--danger-light); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--danger); text-align: center;">
+                    <strong style="color: var(--danger-text); font-size: 1.2rem; display: block; margin-bottom: 0.5rem;">Si p > α</strong>
+                    <span style="display: block; margin-bottom: 0.25rem; color: var(--danger-text);">No se rechaza H0</span>
+                    <span style="font-size: 1.2rem; display: block; margin-bottom: 0.25rem; color: var(--danger-text);">↓</span>
+                    <strong style="color: var(--danger-text);">No existe evidencia suficiente para apoyar H1.</strong>
+                </div>
+            </div>
+
+            <!-- LÍNEA DE FLUJO -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--background); padding: 1.5rem; border-radius: 0.5rem; overflow-x: auto; font-weight: 600; color: var(--text-main); font-size: 0.9rem; gap: 0.5rem; min-width: 600px;">
+                <div style="background: white; padding: 0.75rem 1rem; border-radius: 2rem; border: 1px solid var(--border); box-shadow: var(--shadow); white-space: nowrap;">Datos</div>
+                <span style="color: var(--primary); font-size: 1.2rem;">→</span>
+                <div style="background: white; padding: 0.75rem 1rem; border-radius: 2rem; border: 1px solid var(--border); box-shadow: var(--shadow); white-space: nowrap;">Valor P</div>
+                <span style="color: var(--primary); font-size: 1.2rem;">→</span>
+                <div style="background: white; padding: 0.75rem 1rem; border-radius: 2rem; border: 1px solid var(--border); box-shadow: var(--shadow); white-space: nowrap;">Comparación con α</div>
+                <span style="color: var(--primary); font-size: 1.2rem;">→</span>
+                <div style="background: white; padding: 0.75rem 1rem; border-radius: 2rem; border: 1px solid var(--border); box-shadow: var(--shadow); white-space: nowrap;">Decisión sobre H0</div>
+                <span style="color: var(--primary); font-size: 1.2rem;">→</span>
+                <div style="background: var(--primary); color: white; padding: 0.75rem 1rem; border-radius: 2rem; box-shadow: var(--shadow); white-space: nowrap;">Conclusión</div>
+            </div>
+        </div>
+    </section>
+    <!-- FIN DE LA NUEVA SECCIÓN -->
+
+    <section class="section-card hidden-results" id="matriz-errores" style="display: none;">
+        <h2>4. Matriz de Decisión y Errores</h2>
+        <p>En las pruebas de hipótesis podemos cometer dos tipos de errores. La siguiente matriz muestra la decisión tomada por nuestro experimento resaltada.</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Decisión del Análisis</th>
+                    <th>Realidad: H0 es Verdadera <br><small>(El modelo no sirve)</small></th>
+                    <th>Realidad: H1 es Verdadera <br><small>(El modelo sí funciona)</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="row-no-reject">
+                    <td><strong>No rechazar H0</strong></td>
+                    <td>Decisión Correcta ✅</td>
+                    <td><strong>Error Tipo II (β)</strong> ❌<br><small>Falso Negativo</small></td>
+                </tr>
+                <tr id="row-reject">
+                    <td><strong>Rechazar H0</strong></td>
+                    <td><strong>Error Tipo I (α)</strong> ❌<br><small>Falso Positivo</small></td>
+                    <td>Decisión Correcta ✅</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 1rem; background: var(--background); padding: 1rem; border-radius: var(--radius);">
+            <strong>Error Tipo I:</strong> Creer que el comportamiento de compra sirve para predecir, cuando en realidad las predicciones son pura suerte. Riesgo: Invertir recursos en un modelo inútil.<br>
+            <strong>Error Tipo II:</strong> Descartar el modelo predictivo asumiendo que no funciona, cuando en realidad sí tiene capacidad predictiva. Riesgo: Perder una ventaja competitiva.
+        </div>
+    </section>
+
+    <section class="section-card hidden-results" id="procedimiento" style="display: none;">
+        <h2>5. Procedimiento Matemático</h2>
+        <p>A continuación se detalla el cálculo de la prueba estadística <strong>Z para una proporción</strong> paso a paso utilizando los datos simulados.</p>
+        
+        <div class="math-box">
+            <div class="math-step">
+                <strong>1. Definición de Parámetros:</strong><br>
+                Proporción esperada por azar (5 categorías) <span class="highlight">P₀ = 0.20</span><br>
+                Nivel de significancia <span class="highlight">α = <span id="math-alpha"></span></span>
+            </div>
+            
+            <div class="math-step">
+                <strong>2. Datos de la Muestra:</strong><br>
+                Tamaño de muestra <span class="highlight">n = <span id="math-n"></span></span><br>
+                Aciertos observados <span class="highlight">x = <span id="math-x"></span></span><br>
+                Proporción de aciertos de la muestra <span class="highlight">p̂ = x / n = <span id="math-phat"></span></span>
+            </div>
+            
+            <div class="math-step">
+                <strong>3. Cálculo del Estadístico de Prueba (Z):</strong><br>
+                Fórmula: Z = (p̂ - P₀) / √(P₀ * (1 - P₀) / n)<br>
+                Sustitución: Z = (<span id="math-phat-sub"></span> - 0.20) / √(0.20 * 0.80 / <span id="math-n-sub"></span>)<br>
+                Resultado: <span class="highlight">Z = <span id="math-z"></span></span>
+            </div>
+            
+            <div class="math-step">
+                <strong>4. Obtención del Valor p (Prueba de cola derecha):</strong><br>
+                Probabilidad de observar un estadístico Z mayor o igual al calculado si H0 fuera cierta.<br>
+                p-value = P(Z > <span id="math-z-sub"></span>) = <span class="highlight"><span id="math-p"></span></span>
+            </div>
+            
+            <div class="math-step" id="math-conclusion">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </section>
+
+    <section class="section-card hidden-results" id="conclusion" style="display: none;">
+        <h2>6. Resultados y Conclusión del Proyecto</h2>
+        <div class="grid-2">
+            <div>
+                <ul style="list-style-type: none; padding: 0;">
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);"><strong>Muestra analizada:</strong> <span id="res-n"></span> transacciones</li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);"><strong>Tasa de acierto del modelo:</strong> <span id="res-accuracy"></span></li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);"><strong>Tasa de error:</strong> <span id="res-error"></span></li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);"><strong>Valor p obtenido:</strong> <span id="res-p"></span></li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);"><strong>Decisión Estadística:</strong> <strong id="res-decision"></strong></li>
+                </ul>
+            </div>
+            <div style="background-color: var(--surface); padding: 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);">
+                <h3>Conclusión de Negocio</h3>
+                <p id="business-conclusion" style="font-size: 1.1rem; color: var(--text-main); font-style: italic;">
+                    <!-- Injected via JS -->
+                </p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    // App State
+    let state = {
+        alpha: 0.05,
+        n: 0,
+        correct: 0,
+        incorrect: 0,
+        pHat: 0,
+        zScore: 0,
+        pValue: 0,
+        dataGenerated: false
+    };
+
+    const p0 = 0.20; // Probability of guessing 1 out of 5 categories
+
+    // DOM Elements
+    const elements = {
+        alphaInput: document.getElementById('alpha-input'),
+        btnRandom: document.getElementById('btn-random'),
+        btnManual: document.getElementById('btn-manual'),
+        sampleInput: document.getElementById('sample-size'),
+        sampleError: document.getElementById('sample-error'),
+        dataSummary: document.getElementById('data-summary'),
+        btnAnalyze: document.getElementById('btn-analyze'),
+        resultsColumn: document.getElementById('results-column'),
+        
+        // Displays
+        dispN: document.getElementById('display-n'),
+        dispCorrect: document.getElementById('display-correct'),
+        dispIncorrect: document.getElementById('display-incorrect'),
+        dispPhat: document.getElementById('display-phat'),
+        
+        calcPValue: document.getElementById('calc-pvalue'),
+        calcAlpha: document.getElementById('calc-alpha'),
+        calcComparison: document.getElementById('calc-comparison'),
+        decisionCard: document.getElementById('final-decision-card'),
+        decisionTitle: document.getElementById('decision-title'),
+        decisionText: document.getElementById('decision-text'),
+        
+        // Matrix & Math
+        sectionsToReveal: document.querySelectorAll('.hidden-results'),
+        rowNoReject: document.getElementById('row-no-reject'),
+        rowReject: document.getElementById('row-reject'),
+        
+        mathAlpha: document.getElementById('math-alpha'),
+        mathN: document.getElementById('math-n'),
+        mathX: document.getElementById('math-x'),
+        mathPhat: document.getElementById('math-phat'),
+        mathPhatSub: document.getElementById('math-phat-sub'),
+        mathNSub: document.getElementById('math-n-sub'),
+        mathZ: document.getElementById('math-z'),
+        mathZSub: document.getElementById('math-z-sub'),
+        mathP: document.getElementById('math-p'),
+        mathConclusion: document.getElementById('math-conclusion'),
+        
+        // Final Res
+        resN: document.getElementById('res-n'),
+        resAcc: document.getElementById('res-accuracy'),
+        resErr: document.getElementById('res-error'),
+        resP: document.getElementById('res-p'),
+        resDecision: document.getElementById('res-decision'),
+        busConclusion: document.getElementById('business-conclusion')
+    };
+
+    // Helper: Standard Normal CDF approximation (Abramowitz & Stegun)
+    function normalCDF(x) {
+        let t = 1 / (1 + 0.2316419 * Math.abs(x));
+        let d = 0.3989423 * Math.exp(-x * x / 2);
+        let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+        if (x > 0) p = 1 - p;
+        return p;
+    }
+
+    // Generate Data Logic
+    function generateSimulationData(size) {
+        if (size < 30) {
+            elements.sampleError.style.display = 'block';
+            return false;
+        }
+        elements.sampleError.style.display = 'none';
+
+        // Simulate a predictive model's true accuracy.
+        // We randomly decide if this model is "good" or "bad" for educational variance.
+        // It ranges from slightly worse than random (0.15) to highly predictive (0.40)
+        const simulatedTrueAccuracy = 0.15 + (Math.random() * 0.25);
+        
+        let correctCount = 0;
+        for(let i=0; i<size; i++){
+            if(Math.random() <= simulatedTrueAccuracy) {
+                correctCount++;
+            }
+        }
+
+        state.n = size;
+        state.correct = correctCount;
+        state.incorrect = size - correctCount;
+        state.pHat = correctCount / size;
+        state.dataGenerated = true;
+
+        updateDataUI();
+        return true;
+    }
+
+    function updateDataUI() {
+        elements.dispN.textContent = state.n;
+        elements.dispCorrect.textContent = state.correct;
+        elements.dispIncorrect.textContent = state.incorrect;
+        elements.dispPhat.textContent = (state.pHat * 100).toFixed(2) + '%';
+        
+        elements.dataSummary.classList.remove('hidden');
+        elements.btnAnalyze.disabled = false;
+        
+        // Reset results visually if data changes
+        elements.resultsColumn.style.opacity = '0.5';
+        elements.resultsColumn.style.pointerEvents = 'none';
+        elements.sectionsToReveal.forEach(el => el.style.display = 'none');
+        elements.decisionCard.style.display = 'none';
+    }
+
+    elements.btnRandom.addEventListener('click', () => {
+        const randomSize = Math.floor(Math.random() * (500 - 50 + 1)) + 50;
+        elements.sampleInput.value = randomSize;
+        generateSimulationData(randomSize);
+    });
+
+    elements.btnManual.addEventListener('click', () => {
+        const size = parseInt(elements.sampleInput.value);
+        if (isNaN(size)) return;
+        generateSimulationData(size);
+    });
+
+    elements.alphaInput.addEventListener('change', (e) => {
+        let val = parseFloat(e.target.value);
+        if(val <= 0 || val >= 1) val = 0.05;
+        state.alpha = val;
+    });
+
+    elements.btnAnalyze.addEventListener('click', () => {
+        if (!state.dataGenerated) return;
+
+        // 1. Calculations
+        state.alpha = parseFloat(elements.alphaInput.value) || 0.05;
+        
+        // Z = (p_hat - p0) / sqrt(p0*(1-p0)/n)
+        const standardError = Math.sqrt((p0 * (1 - p0)) / state.n);
+        state.zScore = (state.pHat - p0) / standardError;
+        
+        // P-value for right-tailed test (H1: p > 0.20)
+        state.pValue = 1 - normalCDF(state.zScore);
+        
+        // Prevent floating point anomalies for extremely small p-values
+        if (state.pValue < 0.0001) state.pValue = "< 0.0001";
+        
+        const numericPValue = typeof state.pValue === 'string' ? 0 : state.pValue;
+        const rejectH0 = numericPValue <= state.alpha;
+
+        // 2. Update Results UI
+        elements.resultsColumn.style.opacity = '1';
+        elements.resultsColumn.style.pointerEvents = 'auto';
+        
+        const displayP = typeof state.pValue === 'string' ? state.pValue : state.pValue.toFixed(4);
+        elements.calcPValue.textContent = displayP;
+        elements.calcAlpha.textContent = state.alpha.toFixed(2);
+        
+        const operator = rejectH0 ? '≤' : '>';
+        elements.calcComparison.innerHTML = `<span style="color:${rejectH0 ? 'var(--success)' : 'var(--danger)'}">${displayP} ${operator} ${state.alpha.toFixed(2)}</span>`;
+
+        // Decision Card
+        elements.decisionCard.style.display = 'block';
+        elements.decisionCard.className = `result-card ${rejectH0 ? 'success' : 'danger'}`;
+        
+        if (rejectH0) {
+            elements.decisionTitle.textContent = "Se rechaza H0";
+            elements.decisionText.textContent = "Existe evidencia estadística suficiente para apoyar H1: El historial y comportamiento de compra PUEDEN utilizarse para predecir la categoría de compra futura mejor que el azar.";
+            
+            // Matrix highlights
+            elements.rowReject.classList.add('table-success');
+            elements.rowNoReject.classList.remove('table-danger');
+        } else {
+            elements.decisionTitle.textContent = "No se rechaza H0";
+            elements.decisionText.textContent = "No existe evidencia estadística suficiente para afirmar que el historial de compra permita predecir significativamente la categoría futura. El modelo no es mejor que adivinar al azar.";
+            
+            // Matrix highlights
+            elements.rowNoReject.classList.add('table-danger');
+            elements.rowReject.classList.remove('table-success');
+        }
+
+        // 3. Update Math Section
+        elements.mathAlpha.textContent = state.alpha;
+        elements.mathN.textContent = state.n;
+        elements.mathX.textContent = state.correct;
+        elements.mathPhat.textContent = state.pHat.toFixed(4);
+        elements.mathPhatSub.textContent = state.pHat.toFixed(4);
+        elements.mathNSub.textContent = state.n;
+        elements.mathZ.textContent = state.zScore.toFixed(4);
+        elements.mathZSub.textContent = state.zScore.toFixed(4);
+        elements.mathP.textContent = displayP;
+        
+        elements.mathConclusion.innerHTML = `<strong>5. Conclusión Estadística:</strong><br>
+            Como p-value (${displayP}) ${operator} α (${state.alpha}), 
+            <span class="highlight">${rejectH0 ? 'Se rechaza' : 'No se rechaza'} H0.</span>`;
+
+        // 4. Update Summary Section
+        elements.resN.textContent = state.n;
+        elements.resAcc.textContent = (state.pHat * 100).toFixed(2) + '%';
+        elements.resErr.textContent = ((1 - state.pHat) * 100).toFixed(2) + '%';
+        elements.resP.textContent = displayP;
+        elements.resDecision.textContent = rejectH0 ? "Rechazar H0" : "No Rechazar H0";
+        elements.resDecision.style.color = rejectH0 ? 'var(--success)' : 'var(--danger)';
+
+        if (rejectH0) {
+            elements.busConclusion.innerHTML = "Dado el análisis estadístico, <strong>SÍ</strong> podemos concluir que analizar el comportamiento de compra previo es útil. La empresa debería implementar este modelo de analítica predictiva, ya que su capacidad para predecir la siguiente compra del cliente es estadísticamente significativa y no es producto del azar. Esto permitirá optimizar estrategias de marketing dirigidas.";
+        } else {
+            elements.busConclusion.innerHTML = "Dado el análisis estadístico, <strong>NO</strong> tenemos evidencia suficiente para afirmar que el comportamiento de compra prediga la siguiente categoría. La tasa de aciertos actual podría deberse al azar. La empresa <strong>no debería</strong> basar sus decisiones operativas exclusivamente en este modelo sin antes recolectar más datos, agregar nuevas variables predictoras o afinar el algoritmo.";
+        }
+
+        // Reveal sections smoothly
+        elements.sectionsToReveal.forEach(el => {
+            el.style.display = 'block';
+        });
+        
+        // Scroll to results
+        setTimeout(() => {
+            elements.resultsColumn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    });
+
+</script>
+</body>
+</html>
